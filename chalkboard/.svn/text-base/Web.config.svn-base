@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<system.web>
+		<compilation debug="true" targetFramework="4.0" />
+	</system.web>
+    <system.webServer>
+        <defaultDocument>
+            <files>
+                <remove value="default.aspx" />
+                <remove value="index.htm" />
+                <remove value="Default.htm" />
+                <remove value="iisstart.htm" />
+                <remove value="index.html" />
+                <remove value="Default.asp" />
+                <remove value="index.php" />
+                <add value="client.html" />
+            </files>
+        </defaultDocument>
+    </system.webServer>
+</configuration>

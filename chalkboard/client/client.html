@@ -1,0 +1,312 @@
+<html>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<head>
+    <title>Chalk Board</title>
+    <link type="text/css" rel="stylesheet" href="style.css" />
+    <script type="text/javascript" src="socket.io.js"></script>
+    <script type="text/javascript" src="client.js"></script>
+    <script type="text/javascript" src="jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="Canvas2Image.js"></script>
+    <script>
+        var cb, lastPos = null, cb_ctx, mouseState = 'up', backImage, color = '#FFFFFF', nickname;
+        var users = [];
+
+        function redraw() {
+            cb = document.getElementById('mycanvas');
+
+            cb_ctx = cb.getContext('2d');
+
+            //cb.width = $(window).width();
+            //cb.height = $(window).height();//  + (window.innerHeight - window.outerHeight);
+
+            if (cb_ctx) {
+                cb_ctx.lineWidth = 3;
+                cb_ctx.strokeStyle = color;
+
+                if (backImage) {
+                    cb_ctx.drawImage(backImage, 0, 0, cb.width, cb.height);
+                }
+                else {
+                    backImage = new Image();
+                    backImage.addEventListener('load', function () {
+                        cb_ctx.drawImage(this, 0, 0, cb.width, cb.height);
+                    });
+
+                    backImage.src = "images/chalkboard.jpg";
+                }
+            }
+        }
+
+        $(document).ready(function () {
+
+            redraw();
+
+//            if (navigator.userAgent.match(/Android/i)) {
+//                window.scrollTo(0, 1);
+//            }
+
+            nickname = prompt("What's your nickname?");
+
+            if (nickname.trim().length == 0)
+                nickname = "user" + Math.floor(Math.random() * 1001);
+
+            EventController.connect(nickname);
+            execute({ type: 'join', nickname: nickname });
+
+            $('.eraser').bind('mousedown touchstart', function () {
+                redraw();
+            });
+
+            $('.color').bind('click touchstart', function () {
+                color = $(this).css('background-color');
+                cb = document.getElementById('mycanvas');
+                cb_ctx = cb.getContext('2d');
+                cb_ctx.strokeStyle = color;
+
+                $('.color').removeClass('selected');
+                $(this).addClass('selected');
+
+                var action = { type: 'pick', color: color, nickname: nickname };
+                EventController.sendAction(action);
+                execute(action);
+            });
+
+            $('#save').bind('click touchstart', function () {
+                Canvas2Image.saveAsPNG(document.getElementById('mycanvas'));
+            });
+
+			$('#mycanvas').bind('mousemove touchmove', function (e) {
+	            e.preventDefault();
+
+	            var pos;
+
+	            if (e.originalEvent && e.originalEvent.touches) {
+	                pos = { x: e.originalEvent.touches[0].offsetX, y: e.originalEvent.touches[0].offsetY }
+	            } else {
+	                pos = { x: e.offsetX, y: e.offsetY };
+	            }
+
+	            //var pct = { x: pos.x / cb.width * 100, y: pos.y / cb.height * 100 };
+
+	            //var action = { type: 'pos', color: color, pos: pos, nickname: nickname };
+	            //EventController.sendAction(action);
+
+	            if (mouseState == 'down') {
+	                var action = { type: 'draw', color: color, pos: pos, nickname: nickname };
+	                EventController.sendAction(action);
+	                execute(action);
+	            }
+	        });
+
+	        $('#mycanvas').bind('mousedown touchstart', function (e) {
+	            e.preventDefault();
+
+	            mouseState = 'down';
+
+	            var pos;
+
+	            if (e.originalEvent && e.originalEvent.touches) {
+	                pos = { x: e.originalEvent.touches[0].offsetX, y: e.originalEvent.touches[0].offsetY };
+	            } else {
+	                pos = { x: e.offsetX, y: e.offsetY };
+	            }
+
+	            //var pct = { x: pos.x / cb.width * 100, y: pos.y / cb.height * 100 };
+
+	            var action = { type: 'move', pos: pos, nickname: nickname };
+
+	            EventController.sendAction(action);
+	            execute(action);
+	        });
+
+	        $('#mycanvas').bind('mouseup touchend', function (e) {
+	            e.preventDefault();
+
+	            mouseState = 'up';
+
+	            var action = { type: 'stop', nickname: nickname };
+
+	            EventController.sendAction(action);
+	            execute(action);
+	        });
+
+
+
+        });
+
+        $(window).resize(function () {
+            redraw();
+        });
+
+        EventController.addEventListener('action', function (action) {
+            execute(action);
+        });
+
+        EventController.addEventListener('join', function (nickname) {
+            execute({ type: 'join', nickname: nickname });
+        });
+
+        EventController.addEventListener('leave', function (nickname) {
+            execute({ type: 'leave', nickname: nickname });
+        });
+
+        EventController.addEventListener('people_count', function (count) {
+            execute({ type: 'people_count', value: count });
+        });
+
+		EventController.addEventListener('canvas', function (canvasData) {
+            var imageObj = new Image();
+			    imageObj.onload = function(){
+			        cb_ctx.drawImage(this, 0, 0);
+			    };
+
+			    imageObj.src = canvasData;
+        });
+        
+        function execute(action) {
+
+            if (cb_ctx) {
+                if (action.type == 'move') {
+                    lastPos = { x: action.pos.x, y: action.pos.y };
+                    users[action.nickname] = lastPos;
+                }
+                else if (action.type == 'draw') {
+                    var tmpLastPos = users[action.nickname];
+
+                    cb_ctx.beginPath();
+                    cb_ctx.strokeStyle = action.color;
+                    cb_ctx.moveTo(tmpLastPos.x, tmpLastPos.y);
+                    cb_ctx.lineTo(action.pos.x, action.pos.y);
+                    cb_ctx.stroke();
+                    lastPos = { x: action.pos.x, y: action.pos.y };
+                    users[action.nickname] = lastPos;
+
+                    var id = 'user_' + action.nickname;
+                    if ($('#' + id).length == 0) {
+                        addUser(action.nickname);
+                    }
+                    $('#' + id).html(action.nickname + '...');
+                }
+                else if (action.type == 'stop') {
+                    var id = 'user_' + action.nickname;
+                    if ($('#' + id).length == 0) {
+                        addUser(action.nickname);
+                    }
+                    $('#' + id).html(action.nickname);
+                }
+                else if (action.type == 'pick') {
+                    var msg = action.nickname + ' picked a color';
+                    log(msg, action.color);
+
+                    var id = 'user_' + action.nickname;
+                    if ($('#' + id).length == 0) {
+                        addUser(action.nickname);
+                    }
+
+                    $('#' + id).css('color', colorToHex(action.color));
+                }
+                else if (action.type == 'pos') {
+                }
+                else if (action.type == 'join') {
+                    var msg = action.nickname + ' joined';
+                    log(msg);
+
+                    addUser(action.nickname);
+
+                    firstPos = { x: 0, y: 0 };
+                    users[action.nickname] = firstPos;
+                }
+                else if (action.type == 'leave') {
+                    var msg = action.nickname + ' has left the room';
+                    log(msg);
+
+                    var id = 'user_' + action.nickname;
+                    if ($('#' + id).length > 0) {
+                        $('#' + id).remove();
+                    }
+                }
+                else if (action.type == 'people_count') {
+                    var msg = action.value + ' online users';
+                    log(msg);
+                }
+            }
+        }
+
+        function addUser(nickname) {
+            var user = document.createElement('div');
+            user.id = 'user_' + nickname;
+            user.className = 'user';
+            user.innerHTML = nickname;
+            var parent = document.getElementById('stats');
+            parent.appendChild(user);
+        }
+
+        function log(msg, color) {
+            var style = '';
+
+            if (color) {
+                style = 'color:' + colorToHex(color);
+            }
+
+            $('#log').prepend('<div style="' + style + '">' + msg + '</div>');
+        }
+
+        function colorToHex(color) {
+            if (color.substr(0, 1) === '#') {
+                return color;
+            }
+            var digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
+
+            var red = parseInt(digits[2]);
+            var green = parseInt(digits[3]);
+            var blue = parseInt(digits[4]);
+
+            var rgb = blue | (green << 8) | (red << 16);
+
+            return digits[1] + '#' + zeroPad(rgb.toString(16), 6);
+        };
+
+        function zeroPad(num, count) {
+            var numZeropad = num + '';
+            while (numZeropad.length < count) {
+                numZeropad = "0" + numZeropad;
+            }
+            return numZeropad;
+        }
+    </script>
+</head>
+<body>
+    <canvas id="mycanvas" width="800" height="600" style=""></canvas>
+    <div class="toolbar">
+        <div class="eraser">
+        </div>
+        <div class="color white selected">
+        </div>
+        <div class="color red">
+        </div>
+        <div class="color green">
+        </div>
+        <div class="color blue">
+        </div>
+        <div class="color yellow">
+        </div>
+        <div class="color fuchsia">
+        </div>
+        <div class="color aqua">
+        </div>
+    </div>
+    <div id="sidebar">
+        <div id="stats">
+            <!--
+            <div id="roei" class="user">Roei</div>
+            <div id="roei" class="user">Yair</div>
+            -->
+        </div>
+        <div id="save">
+        </div>
+        <div id="log">
+        </div>
+    </div>
+</body>
+</html>

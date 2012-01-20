@@ -1,0 +1,221 @@
+<html>
+<head>
+    <title>Chalk Board</title>
+    <link type="text/css" rel="stylesheet" href="style.css" />
+    <script type="text/javascript" src="socket.io.js"></script>
+    <script type="text/javascript" src="client.js"></script>
+    <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="Canvas2Image.js"></script>
+    <script>
+        var cb, lastPos = null, cb_ctx, mouseState = 'up', backImage, color='#FFFFFF', nickname;
+
+        function redraw() {
+            cb = document.getElementById('mycanvas');
+
+            cb_ctx = cb.getContext('2d');
+
+            cb.width = $(window).width();
+            cb.height = $(window).height();
+            
+            if (cb_ctx) {
+                cb_ctx.lineWidth = 3;
+                cb_ctx.strokeStyle = color;
+
+                if (backImage) {
+                    cb_ctx.drawImage(backImage, 0, 0, cb.width, cb.height);
+                }
+                else {
+                    backImage = new Image();
+                    backImage.addEventListener('load', function () {
+                        cb_ctx.drawImage(this, 0, 0, cb.width, cb.height);
+                    });
+
+                    backImage.src = "images/chalkboard.jpg";
+                }
+            }
+        }
+
+        $(document).ready(function () {
+            redraw();
+
+            nickname = prompt("What's your nickname?");
+            
+            if (nickname.trim().length == 0)
+                nickname = "user" + Math.floor(Math.random()*1001);            
+            
+            var action = { type: 'join', nickname: nickname };
+            EventController.sendAction(action);
+            execute(action);            
+
+            $('.eraser').mousedown(function () {
+                redraw();
+            });
+
+            $('.color').click(function () {
+                color = $(this).css('background-color');
+                cb = document.getElementById('mycanvas');
+                cb_ctx = cb.getContext('2d');
+                cb_ctx.strokeStyle = color;
+                
+                $('.color').removeClass('selected');
+                $(this).addClass('selected');
+                
+                var action = { type: 'pick', color: color, nickname: nickname };
+                EventController.sendAction(action);
+                execute(action);
+            });
+
+            $('.save').click(function () { 
+                Canvas2Image.saveAsPNG(document.getElementById('mycanvas')); 
+            });
+        });
+
+        $(window).resize(function () {
+            redraw();
+        });
+
+        EventController.addEventListener('action', function (action) {
+            execute(action);
+        });
+
+        $(document).bind('mousemove touchmove', function (e) {
+            e.preventDefault();
+
+            var pos;
+
+            if (e.touches && e.touches[0]) {
+                pos = { x: e.touches[0].pageX, y: e.touches[0].pageY }
+            }
+            else {
+                pos = { x: e.pageX, y: e.pageY };
+            }
+
+
+            var pct = { x: pos.x / cb.width * 100, y: pos.y / cb.height * 100 };
+
+            //var action = { type: 'pos', color: color, pos: pos, nickname: nickname };
+            //EventController.sendAction(action);
+
+            if (mouseState == 'down') {
+                var action = { type: 'draw', color: color, pos: pos, pct: pct, nickname: nickname };
+                EventController.sendAction(action);
+                execute(action);
+            }
+        });
+
+        $(document).bind('mousedown touchstart', function (e) {
+            
+            mouseState = 'down';
+            
+            var pos;
+            if (e.touches && e.touches[0]) {
+                pos = { x: e.touches[0].pageX, y: e.touches[0].pageY };
+            }
+            else {
+                pos = { x: e.pageX, y: e.pageY };
+            }
+
+            var pct = { x: pos.x / cb.width * 100, y: pos.y / cb.height * 100 };
+
+            var action = { type: 'move', pos: pos, pct: pct, nickname: nickname };
+
+            EventController.sendAction(action);
+            execute(action);
+        });
+
+        $(document).mouseup(function (e) {
+            mouseState = 'up';
+        });
+
+        function execute(action) {
+            
+            if (cb_ctx) {
+                if (action.type == 'move') {
+                    console.log('x:' + action.pos.x + ' (' + action.pct.x + '%) y:' + action.pos.y + '(' + action.pct.y + ')');
+                    lastPos = { x: action.pos.x, y: action.pos.y, xpct: action.pct.x, ypct: action.pct.y };
+                }
+                else if (action.type == 'draw') {
+                    console.log('x:' + action.pos.x + ' (' + action.pct.x + '%) y:' + action.pos.y + '(' + action.pct.y + ')');                    
+                    cb_ctx.beginPath();
+                    cb_ctx.strokeStyle = action.color;
+                    //cb_ctx.moveTo(lastPos.x, lastPos.y);
+                    //cb_ctx.lineTo(action.pos.x, action.pos.y);
+                    cb_ctx.moveTo(lastPos.xpct * cb.width / 100, lastPos.ypct * cb.height / 100);
+                    cb_ctx.lineTo(action.pct.x * cb.width / 100, action.pct.y * cb.height / 100);
+                    cb_ctx.stroke();
+                    lastPos = { x: action.pos.x, y: action.pos.y, xpct: action.pct.x, ypct: action.pct.y };
+                }
+                else if (action.type == 'pick') {
+                    var msg = action.nickname + ' picked a color';                    
+                    log(msg, action.color);
+                }
+                else if (action.type == 'pos') {
+                    $('#user_' + action.nickname).css('left',action.pos.x).css('top',action.pos.y).css('background-color',colorToHex(action.color));
+                }
+                else if (action.type == 'join') {
+                    var msg = action.nickname + ' has joined';
+                    log(msg);
+                }
+            }
+        }
+        
+        function log(msg, color) {
+            var style = '';
+            
+            if (color) {
+                style = 'color:' + colorToHex(color);
+            }
+            
+            $('.log').prepend('<div style="' + style + '">' + msg + '</div>');
+        }
+        
+        function colorToHex(color) {
+            if (color.substr(0, 1) === '#') {
+                return color;
+            }
+            var digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
+            
+            var red = parseInt(digits[2]);
+            var green = parseInt(digits[3]);
+            var blue = parseInt(digits[4]);
+            
+            var rgb = blue | (green << 8) | (red << 16);
+            
+            return digits[1] + '#' + zeroPad(rgb.toString(16), 6);
+        };
+        
+        function zeroPad(num,count) {
+            var numZeropad = num + '';
+            while(numZeropad.length < count) {
+                numZeropad = "0" + numZeropad;
+            }
+            return numZeropad;
+        }
+    </script>
+</head>
+<body>
+    <canvas id="mycanvas"></canvas>
+    <div class="save">
+    </div>
+    <div class="toolbar">
+        <div class="eraser">
+        </div>
+        <div class="color white selected">
+        </div>
+        <div class="color red">
+        </div>
+        <div class="color green">
+        </div>
+        <div class="color blue">
+        </div>
+        <div class="color yellow">
+        </div>
+        <div class="color fuchsia">
+        </div>
+        <div class="color aqua">
+        </div>
+    </div>
+    <div class="log">
+    </div>
+</body>
+</html>

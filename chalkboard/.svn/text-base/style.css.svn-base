@@ -1,0 +1,120 @@
+body {
+    margin: 0px;
+    padding: 0px;
+}
+canvas {
+    position: absolute; 
+    z-index: 0;
+    cursor: hand;
+}
+#sidebar {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: 200px;
+    height: 100%;
+    background-color: #333;
+    background: url(images/pattern.jpg) repeat;    
+    border-left: solid 3px #ccc;
+    z-index: 1000;
+    padding: 5px;
+}
+
+#stats {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 200px;
+    height: 80%;
+    overflow: auto;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    padding-top: 15px;
+    overflow: auto;
+}
+
+#stats .user {
+    position: relative;
+    color: #fff;
+    font-family: arial;
+    font-size: 28px;
+    display: block;
+}
+
+#log {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: 200px;
+    height: 20%;
+    color: #fff;
+    border-top: solid 3px #ccc;
+    font-family: arial;
+    font-size: 18px;
+    overflow: auto;
+    padding: 5px;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+}
+
+.toolbar {
+    position: absolute;
+    bottom: 0px;
+}
+.eraser {
+    float: left;
+    width: 120px;
+    height: 75px;
+    box-shadow: 2px 2px 1px #333;
+    background-color: Orange;
+    border-radius: 15px;
+    margin: 3px;
+    border: solid 2px #ccc;
+    opacity: 0.9;   
+    cursor: hand;
+}
+.color {
+    float: left; 
+    width: 75px; 
+    height: 75px;       
+    -moz-border-radius: 75px;
+    border-radius: 75px;
+    margin: 3px;
+    border: solid 2px #ccc;
+    box-shadow: 2px 2px 1px #333;
+    opacity: 0.9;   
+    cursor: hand;
+}
+
+.color:hover, .eraser:hover, .save:hover, .selected {
+    opacity: 1;
+}
+
+.white { background-color:#FFFFFF; }
+.red { background-color:#FF0000; }
+.blue { background-color:#0000FF; }
+.green { background-color:#00FF00; }
+.yellow { background-color:#FFFF00; }
+.fuchsia { background-color:#FF00FF; }
+.aqua { background-color:#00FFFF; }
+
+#save {
+    position: absolute;
+    right: 10px;
+    bottom: 205px;
+    display: inline-block;
+    background-image: url(images/snapshot.png);
+    width: 64px;
+    height: 64px;
+    opacity: 0.9;   
+}
+
+.curser {
+    position: absolute; 
+    width: 6px; 
+    height: 6px;       
+    -moz-border-radius: 6px;
+    border-radius: 6px;
+    display: inline-block;
+    background-color: Red;
+}

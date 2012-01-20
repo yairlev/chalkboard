@@ -1,0 +1,28 @@
+10
+
+dir
+0
+https://chalkboard.googlecode.com/svn/trunk/client
+https://chalkboard.googlecode.com/svn
+add
+
+
+
+
+
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+d09fde25-7ac3-635a-b021-d30408746811
+

@@ -1,0 +1,36 @@
+var server = require('http').createServer(requestListener);
+var io = require('socket.io').listen(server);
+
+var numOfusers = 0;
+
+io.sockets.on('connection', function (socket) {
+    socket.on('join', function (nickname) {
+        if (nickname) {
+            numOfusers++;
+            socket.set('nickname', nickname, function () { });
+            socket.broadcast.emit('join', nickname);
+            socket.broadcast.emit('people_count', numOfusers);
+            socket.emit('people_count', numOfusers);
+        }
+    });
+
+    socket.on('action', function (action) {
+        console.log(action);
+        socket.broadcast.emit('action', action);
+    });
+
+    socket.on('disconnect', function () {
+        socket.get('nickname', function (err, nickname) {
+            if (nickname) {
+                numOfusers--;
+                socket.broadcast.emit('leave', nickname);
+                socket.broadcast.emit('people_count', numOfusers);
+            }
+        });
+    });
+});
+
+function requestListener(req, res) {
+}
+
+server.listen(8888);
