@@ -5,8 +5,9 @@ body {
 canvas {
     position: absolute; 
     z-index: 0;
-    cursor: hand;
+    background:url(images/chalkboard.jpg)
 }
+
 #sidebar {
     position: absolute;
     bottom: 0px;

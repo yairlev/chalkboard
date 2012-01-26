@@ -1,5 +1,5 @@
 var server = require('http').createServer(requestListener);
-var io = require('socket.io').listen(server);
+var io = require('../socket.io').listen(server);
 var canvasManager = require('./canvas_manager.js');
 
 var numOfusers = 0;
@@ -29,7 +29,7 @@ io.sockets.on('connection', function (socket) {
 				canvasManager.draw(action, lastPos);
 				socket.set('pos', action.pos);
 			});
-            
+
         }
         else if (action.type == 'move')
         {
@@ -52,6 +52,7 @@ io.sockets.on('connection', function (socket) {
 });
 
 function requestListener(req, res) {
+    res.end("hello world \n");
 }
 
-server.listen(8888);
+server.listen(8889);

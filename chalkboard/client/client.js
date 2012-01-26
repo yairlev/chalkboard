@@ -12,7 +12,7 @@
 
         connect: function (nickname) {
 
-            socket = io.connect('http://localhost:8888');
+            socket = io.connect('http://localhost:8889');
 
             socket.on('connect', function () {
                 socket.emit('join', nickname)

@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+    <style type="text/css">
+        #canvas
+        {
+           /*background:  -webkit-gradient(linear, left top, right top, from(#00FF00), to(#000000))*/
+            background: -webkit-gradient(
+                radial, 500 50%, 20, 500 50%, 100, from(red), color-stop(0.2, orange), color-stop(0.4, yellow), color-stop(0.6, green), color-stop(0.8, blue), to(#fff)
+            );
+        }
+    </style>
+    <script type="text/javascript" src="jquery-1.7.1.min.js"></script>
+    <script type="text/javascript">
+        var isMouseInCanvas = false;
+        var keypadPressed;
+        var isMouseDown = false;
+        var mouseLastPos;
+        var dragKeyCode = 17;
+
+        $(document).ready(function() {
+
+            document.oncontextmenu = function() {return false;};
+
+            $('#canvas').css('top', (-($('#canvas').height() - $('#canvas_win').height()) / 2) + 'px');
+            $('#canvas').css('left', (-($('#canvas').width() - $('#canvas_win').width()) / 2) + 'px');
+
+            $(document).bind('mousedown', function(e) {
+                isMouseDown = true;
+                mouseLastPos = { x: e.clientX , y:e.clientY };
+            });
+
+            $(document).bind('mouseup', function() {
+                isMouseDown = false;
+            });
+
+            $(document).bind('mousemove', function(e) {
+                if (keypadPressed == dragKeyCode && isMouseDown && mouseLastPos)
+                {
+                    var x = e.clientX;
+                    var y = e.clientY;
+
+                    var top = $('#canvas').position().top + y - mouseLastPos.y;
+                    var left = $('#canvas').position().left + x - mouseLastPos.x;
+
+                    if (top >= $('#canvas_win').height() - $('#canvas').height() && top <= 0)
+                    {
+                        $('#canvas').css('top', top + 'px');
+                    }
+
+                    if (left >=  $('#canvas_win').width() - $('#canvas').width() && left <= 0)
+                    {
+                        $('#canvas').css('left', left + 'px');
+                    }
+
+                    mouseLastPos = {x: x, y: y};
+                }
+            });
+
+            $('#canvas').bind('mouseenter', function() {
+                isMouseInCanvas = true;
+            });
+
+            $('#canvas').bind('mouseleave', function() {
+                isMouseInCanvas = false;
+            });
+
+            $(document).bind('keydown', function(e) {
+                keypadPressed = e.keyCode;
+                document.body.style.cursor = 'pointer';
+            });
+
+            $(document).bind('keyup', function() {
+                document.body.style.cursor = 'default';
+                keypadPressed = null;
+            });
+        });
+
+    </script>
+</head>
+<body>
+    <div id="canvas_win" style="position: absolute; width: 300px; height:300px; top:200px; left:200px; overflow: hidden;">
+        <canvas id="canvas" style="width: 1000px; height: 1000px; position: relative;">
+
+        </canvas>
+    </div>
+    <div id="position">
+
+    </div>
+</body>
+</html>

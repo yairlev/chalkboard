@@ -1,4 +1,4 @@
-var Canvas = require('canvas/lib/canvas');
+var Canvas = require('../canvas/lib/canvas');
 
 canvas = new Canvas(800, 600);
 ctx = canvas.getContext('2d');
